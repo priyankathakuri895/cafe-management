@@ -77,6 +77,17 @@ Change these before real use (Staff → Edit).
 switch it off. Defaults live in `config/cafe.php`. Run `php artisan config:clear`
 after changing any of them.
 
+## Payment QR code
+
+When settling a bill as **Online**, the order page can show a "scan to pay" QR
+code with the bill amount, your bank name, account name and account number as
+text. It only appears once you fill in `CAFE_BANK_NAME`, `CAFE_BANK_ACCOUNT_NAME`
+and `CAFE_BANK_ACCOUNT_NUMBER` in `.env` — otherwise a reminder to fill them in
+is shown instead. This is an informational QR: the customer's banking/wallet
+app shows them your account details and they confirm the transfer themselves,
+it does not auto-fill the amount the way a registered merchant QR (eSewa,
+Khalti, Fonepay) would.
+
 ## How the pieces fit together
 
 - **POS** — tap menu items to build a bill, pick a table for dine-in, save it open or

@@ -78,10 +78,24 @@
                     </div>
                     <div class="mb-2">
                         <label class="form-label small mb-1">Payment method</label>
-                        <select name="payment_method" class="form-select form-select-sm">
+                        <select name="payment_method" id="payMethod" class="form-select form-select-sm">
                             <option value="cash">Cash</option>
                             <option value="online">Online</option>
                         </select>
+                    </div>
+                    <div class="mb-3 d-none" id="qrBox">
+                        @if(config('cafe.bank.account_number'))
+                            <label class="form-label small mb-1">Scan to pay {{ config('cafe.currency') }} {{ number_format((float) $order->total, 2) }}</label>
+                            <div id="payQr" class="d-flex justify-content-center p-2 bg-white border rounded"></div>
+                            <div class="small text-muted text-center mt-1">
+                                {{ config('cafe.bank.account_name') }} · {{ config('cafe.bank.name') }} · {{ config('cafe.bank.account_number') }}
+                            </div>
+                        @else
+                            <div class="alert alert-light border small mb-0">
+                                Add <code>CAFE_BANK_NAME</code>, <code>CAFE_BANK_ACCOUNT_NAME</code> and
+                                <code>CAFE_BANK_ACCOUNT_NUMBER</code> to <code>.env</code> to show a payment QR here.
+                            </div>
+                        @endif
                     </div>
                     <div class="mb-3">
                         <label class="form-label small mb-1">Amount received</label>
@@ -104,6 +118,12 @@
 </div>
 @endsection
 
+@if($order->status === 'open' && config('cafe.bank.account_number'))
+    @push('scripts')
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    @endpush
+@endif
+
 @push('scripts')
 <script>
     const total = {{ (float) $order->total }};
@@ -119,5 +139,33 @@
         amountEl.addEventListener('input', update);
         update();
     }
+
+    function toggleQr() {
+        const methodEl = document.getElementById('payMethod');
+        const box = document.getElementById('qrBox');
+        if (!methodEl || !box) return;
+
+        const showQr = methodEl.value === 'online';
+        box.classList.toggle('d-none', !showQr);
+
+        const qrEl = document.getElementById('payQr');
+        if (showQr && qrEl && !qrEl.dataset.rendered) {
+            qrEl.dataset.rendered = '1';
+            new QRCode(qrEl, {
+                text: @json(
+                    "Pay to: ".(config('cafe.bank.account_name') ?: config('cafe.name'))
+                    ."\nBank: ".config('cafe.bank.name')
+                    ."\nA/C No: ".config('cafe.bank.account_number')
+                    ."\nAmount: ".config('cafe.currency')." ".number_format((float) $order->total, 2)
+                    ."\nBill: ".$order->order_number
+                ),
+                width: 180,
+                height: 180,
+            });
+        }
+    }
+
+    document.getElementById('payMethod')?.addEventListener('change', toggleQr);
+    toggleQr();
 </script>
 @endpush
